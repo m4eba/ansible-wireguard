@@ -1,0 +1,20 @@
+- name: matching route query
+  ansible.builtin.set_fact:
+    wireguard_network_route_query: "[?gateway == '{{ wireguard_routing_gateway }}' && destination == '{{ item }}']"
+- name: get route
+  ansible.builtin.set_fact:
+    wireguard_existing_route: "{{ wireguard_network_routes[0] | community.general.json_query( wireguard_network_route_query ) }}"
+- debug:
+    var: wireguard_existing_route
+- name: api call
+  ansible.builtin.uri:
+    url: 'https://api.hetzner.cloud/v1/networks/{{ wireguard_hcloud_network_id[0] }}/actions/add_route'
+    headers:
+      Content-Type: application/json
+      Authorization: 'Bearer {{ hcloud_token }}'
+    return_content: yes
+    method: POST
+    status_code: [201]
+    body_format: json
+    body: '{ "destination": "{{ item }}", "gateway": "{{ wireguard_routing_gateway }}" }'
+  when: wireguard_existing_route | length == 0

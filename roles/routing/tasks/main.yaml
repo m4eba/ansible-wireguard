@@ -1,0 +1,4 @@
+---
+- name: add route
+  include_tasks: route.yaml
+  with_items: "{{ hostvars[wireguard_routing_allowed_ips_from_host].wireguard_allowed_ips }}"

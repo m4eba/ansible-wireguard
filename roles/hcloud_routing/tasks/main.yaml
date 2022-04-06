@@ -1,0 +1,30 @@
+---
+- name: get networkid
+  ansible.builtin.uri:
+    url: https://api.hetzner.cloud/v1/networks
+    headers:
+      Authorization: 'Bearer {{ hcloud_token }}'
+    return_content: yes
+  register: wireguard_network_id_reg
+- debug:
+    var: wireguard_network_id_reg['json']
+- name: set network id query
+  ansible.builtin.set_fact:
+    wireguard_network_id_query: "networks[?name == '{{ network_name }}'].id"
+- name: routes query
+  ansible.builtin.set_fact:
+    wireguard_network_routes_query: "networks[?name == '{{ network_name }}'].routes"
+- name: set routes
+  ansible.builtin.set_fact:
+    wireguard_network_routes: "{{ wireguard_network_id_reg['json'] | community.general.json_query( wireguard_network_routes_query ) }}"
+- debug:
+    var: wireguard_network_routes
+- name: set network id
+  ansible.builtin.set_fact:
+    wireguard_hcloud_network_id: "{{ wireguard_network_id_reg['json'] | community.general.json_query( wireguard_network_id_query ) }}"
+- name: debug network id
+  debug:
+    var: wireguard_routing_allowed_ips_from_host
+- name: get addresses
+  include_tasks: route.yaml    
+  with_items: "{{ hostvars[wireguard_routing_allowed_ips_from_host].wireguard_allowed_ips }}"

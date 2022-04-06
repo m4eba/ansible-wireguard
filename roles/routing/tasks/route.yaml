@@ -1,0 +1,6 @@
+- name: add route
+  ansible.builtin.include_role:
+    name: m4eba.common.ip_add_route
+  vars:
+    address: '{{ item }}'
+    gateway: '{{ wireguard_routing_gateway }}'

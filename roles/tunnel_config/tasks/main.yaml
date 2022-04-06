@@ -1,0 +1,14 @@
+---
+- name: ip forward
+  become: true
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+
+- name: set postup
+  ansible.builtin.set_fact:
+    wireguard_postup: "{{ wireguard_postup }} + [ 'iptables -t nat -A POSTROUTING -o {{ wireguard_network_interface }} -j MASQUERADE'] "
+- name: set postdown
+  ansible.builtin.set_fact:
+    wireguard_postdown: "{{ wireguard_postdown }} + [ 'iptables -t nat -D POSTROUTING -o {{ wireguard_network_interface }} -j MASQUERADE'] "

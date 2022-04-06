@@ -1,0 +1,78 @@
+---
+- name: install
+  become: true
+  apt:
+    update_cache: yes
+    pkg: wireguard
+
+- name: check for private key
+  become: true
+  ansible.builtin.stat:
+    path: /etc/wireguard/privatekey
+  register: wireguard_privatekey_reg
+
+- name: create private key
+  become: true
+  block:
+    - name: create private key
+      ansible.builtin.command: wg genkey
+      register: wireguard_genkey_reg
+      changed_when: false    
+    - name: set privatekey fact
+      ansible.builtin.set_fact:
+        wireguard_privatekey: '{{ wireguard_genkey_reg.stdout }}'
+    - name: save it into file
+      ansible.builtin.copy:
+        content: '{{ wireguard_privatekey }}'
+        owner: root
+        group: root
+        mode: 0600
+        dest: /etc/wireguard/privatekey        
+  when: not wireguard_privatekey_reg.stat.exists
+
+- name: read private key
+  become: true
+  block:
+    - name: read key
+      ansible.builtin.slurp:
+        src: /etc/wireguard/privatekey
+      register: wireguard_readkey_reg
+    - name: set fact
+      ansible.builtin.set_fact:
+        wireguard_privatekey: "{{ wireguard_readkey_reg['content'] | b64decode }}"
+  when: 
+    - wireguard_privatekey_reg.stat.exists
+
+- debug:
+    var: wireguard_privatekey
+
+- name: build public key
+  become: true
+  block:
+    - name: create public key
+      ansible.builtin.command: wg pubkey
+      args:
+        stdin: '{{ wireguard_privatekey }}'
+      register: wireguard_publickey_reg
+      changed_when: false
+    - name: set public key fact
+      ansible.builtin.set_fact:
+        wireguard_publickey: '{{ wireguard_publickey_reg.stdout }}'
+
+- name: copy config
+  become: true
+  ansible.builtin.template:
+    src: wg.conf.j2
+    dest: '/etc/wireguard/{{ wireguard_interface }}.conf'
+    owner: root
+    group: root
+    mode: 0600
+  notify:
+    - restart wireguard
+
+- name: start service
+  become: true
+  ansible.builtin.service:
+    name: 'wg-quick@{{ wireguard_interface }}'
+    state: started
+    enabled: yes
