@@ -7,6 +7,7 @@ authors:
 description: An ansible collection to install wireguard.
 license_file: 'LICENSE'
 tags: []
-dependencies: { }
+dependencies:
+  m4eba.common: '>=0.1.3'
 repository: http://github.com/m4eba/ansible-wireguard
 issues: http://github.com/m4eba/ansible-wireguard/issues
