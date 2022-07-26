@@ -1,3 +1,2 @@
 wireguard_interface: wg0
-wireguard_network_interface: eth0
 wireguard_port: 51820
